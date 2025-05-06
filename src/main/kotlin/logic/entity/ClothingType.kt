@@ -1,4 +1,4 @@
-package logic
+package logic.entity
 
 enum class ClothingType {
 }
