@@ -5,38 +5,35 @@ import java.net.URL
 import java.net.URLEncoder
 import org.json.JSONArray
 
-class NominatimGeocodingService : GeocodingService{
-    override fun getCoordinates(city: String): Pair<Double, Double>? {
-        try {
+class NominatimGeocodingService : GeocodingService {
+    override fun getCoordinates(city: String): GeocodingResult {
+        return try {
             val encodedCity = URLEncoder.encode(city, "UTF-8")
             val urlString = "https://nominatim.openstreetmap.org/search?city=$encodedCity&format=json&limit=1"
             val url = URL(urlString)
 
-            with(url.openConnection() as HttpURLConnection) {
-                requestMethod = "GET"
-                setRequestProperty("User-Agent", "ClothesSuggesterApp/1.0 (contact@example.com)") // Required by Nominatim
-                connectTimeout = 5000
-                readTimeout = 5000
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.setRequestProperty("User-Agent", "ClothesSuggesterApp/1.0 (contact@example.com)")
+            connection.connectTimeout = 5000
+            connection.readTimeout = 5000
 
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    val response = inputStream.bufferedReader().readText()
-                    val results = JSONArray(response)
-
-                    if (results.length() == 0) return null
-
-                    val firstResult = results.getJSONObject(0)
-                    val Latitude = firstResult.getDouble("Lat")
-                    val Longitude = firstResult.getDouble("Lon")
-
-                    return Pair(Latitude, Longitude)
-                } else {
-                    println("Geocoding failed. HTTP response code: $responseCode")
-                }
+            if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+                return GeocodingResult.Error("HTTP error: ${connection.responseCode}")
             }
-        } catch (e: Exception) {
-            println("Error during geocoding: ${e.message}")
-        }
 
-        return null
+            val response = connection.inputStream.bufferedReader().readText()
+            val results = JSONArray(response)
+
+            if (results.length() == 0) return GeocodingResult.Error("City not found")
+
+            val firstResult = results.getJSONObject(0)
+            val lat = firstResult.getDouble("lat")
+            val lon = firstResult.getDouble("lon")
+
+            GeocodingResult.Success(lat, lon)
+        } catch (e: Exception) {
+            GeocodingResult.Error("Exception: ${e.localizedMessage}")
+        }
     }
 }
