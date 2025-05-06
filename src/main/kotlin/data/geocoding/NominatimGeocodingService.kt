@@ -1,39 +1,40 @@
 package data.geocoding
 
-import java.net.HttpURLConnection
-import java.net.URL
-import java.net.URLEncoder
-import org.json.JSONArray
+import data.Result
+import data.model.Location
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
 
-class NominatimGeocodingService : GeocodingService {
-    override fun getCoordinates(city: String): GeocodingResult {
+class NominatimGeocodingService(
+    private val client: HttpClient
+) : GeocodingService {
+
+    override suspend fun getCoordinates(city: String): Result<Location> {
         return try {
-            val encodedCity = URLEncoder.encode(city, "UTF-8")
-            val urlString = "https://nominatim.openstreetmap.org/search?city=$encodedCity&format=json&limit=1"
-            val url = URL(urlString)
+            val responseText = client.get("https://nominatim.openstreetmap.org/search") {
+                url {
+                    parameters.append("city", city)
+                    parameters.append("format", "json")
+                    parameters.append("limit", "1")
+                }
+                headers.append("User-Agent", "ClothesSuggesterApp/1.0")
+            }.body<String>()
 
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "GET"
-            connection.setRequestProperty("User-Agent", "ClothesSuggesterApp/1.0 (contact@example.com)")
-            connection.connectTimeout = 5000
-            connection.readTimeout = 5000
+            val json = Json.parseToJsonElement(responseText).jsonArray
 
-            if (connection.responseCode != HttpURLConnection.HTTP_OK) {
-                return GeocodingResult.Error("HTTP error: ${connection.responseCode}")
-            }
+            if (json.isEmpty()) return Result.Error("City not found")
 
-            val response = connection.inputStream.bufferedReader().readText()
-            val results = JSONArray(response)
+            val first = json[0] as JsonObject
+            val lat = first["lat"]!!.toString().toDouble()
+            val lon = first["lon"]!!.toString().toDouble()
 
-            if (results.length() == 0) return GeocodingResult.Error("City not found")
-
-            val firstResult = results.getJSONObject(0)
-            val lat = firstResult.getDouble("lat")
-            val lon = firstResult.getDouble("lon")
-
-            GeocodingResult.Success(lat, lon)
+            Result.Success(Location(lat, lon))
         } catch (e: Exception) {
-            GeocodingResult.Error("Exception: ${e.localizedMessage}")
+            Result.Error("Exception: ${e.localizedMessage}")
         }
     }
 }
