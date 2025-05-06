@@ -1,6 +1,9 @@
 package data.geocoding
 
+import data.model.Location
+import data.Result
 interface GeocodingService {
- //   fun getCoordinates(city: String): Pair<Double, Double>?
-    fun getCoordinates(city: String): GeocodingResult
+    suspend fun getCoordinates(city: String): Result<Location>
 }
+
+
