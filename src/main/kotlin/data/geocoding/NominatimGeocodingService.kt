@@ -24,29 +24,12 @@ class NominatimGeocodingService(
                     parameters.append("limit", "1")
                 }
                 headers.append("User-Agent", "ClothesSuggesterApp/1.0")
-            }.body<String>()
-
-
-            val jsonArray = Json.parseToJsonElement(responseText).jsonArray
-
-
-            if (jsonArray.isEmpty()) return Result.Error("City not found")
-
-
-            val first = jsonArray[0].jsonObject
-
-            val latString = first["lat"]?.jsonPrimitive?.content
-            val lonString = first["lon"]?.jsonPrimitive?.content
-
-            val lat = latString?.toDoubleOrNull()
-            val lon = lonString?.toDoubleOrNull()
-
-            if (lat == null || lon == null) {
-                return Result.Error("Invalid coordinates received")
+            }.body<List<Location>>()
+            if(responseText.isEmpty()){
+                return Result.Error("No results found for city: $city")
+            }else{
+            Result.Success(responseText.first())
             }
-
-
-            Result.Success(Location(lat, lon))
         } catch (e: Exception) {
 
             Result.Error("Exception: ${e.localizedMessage}")
