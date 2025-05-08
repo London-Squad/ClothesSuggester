@@ -1,3 +1,7 @@
+import di.dataModule
+import di.logicModule
+import org.koin.core.context.startKoin
+
 fun main() {
-    println("Hello from Clothes Suggester - main branch")
+    startKoin { modules(logicModule, dataModule) }
 }
