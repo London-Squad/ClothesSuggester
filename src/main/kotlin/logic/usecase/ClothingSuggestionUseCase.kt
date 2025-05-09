@@ -8,12 +8,12 @@ import logic.result.LogicResponse
 data class ClothingSuggestionResult(
     val type: ClothingType,
 
-)
+    )
 class ClothingSuggestionUseCase(
     private val weatherRepository: WeatherRepository,
 
 
-) {
+    ) {
     operator  fun invoke(countryName: String): LogicResponse<ClothingType> {
 
         TODO("wait for geoCoding")
@@ -28,6 +28,4 @@ class ClothingSuggestionUseCase(
 
         return ClothingSuggestionResult(type)
     }
-    }
-
-
+}
