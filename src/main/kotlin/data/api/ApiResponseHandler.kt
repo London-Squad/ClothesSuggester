@@ -9,7 +9,7 @@ import io.ktor.util.network.*
 import logic.exception.*
 
 class ApiResponseHandler {
-    suspend inline fun <reified T: DataModel> safeApiCall(call: () -> HttpResponse): ApiResult<T> {
+    suspend inline fun <reified T > safeApiCall(call: () -> HttpResponse): ApiResult<T> {
         return try {
             call().handleResponse<T>()
         } catch (e: UnresolvedAddressException) {
@@ -23,18 +23,19 @@ class ApiResponseHandler {
         }
     }
 
-    suspend inline fun <reified T : DataModel> HttpResponse.handleResponse(): ApiResult<T> {
+    suspend inline fun <reified T > HttpResponse.handleResponse(): ApiResult<T> {
         return when (status.value) {
             in 200..209 -> {
-                val response: T = body<T>()
-                if (response.error != null) {
-                    return ApiResult.Error(response.error!!, response.reason ?: "")
+                val response: T = body()
+                if (response is DataModel) {
+                    ApiResult.Error(true, response.reason ?:"")
+                } else {
+                    ApiResult.Success(response)
                 }
-                ApiResult.Success(response)
             }
-
             in 500..599 -> throw ServerErrorException()
             else -> throw UnknownErrorException(code = status.value, errorMessage = status.description)
         }
+
     }
 }
