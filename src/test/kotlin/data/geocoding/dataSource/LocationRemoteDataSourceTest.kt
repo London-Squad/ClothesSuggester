@@ -1,15 +1,11 @@
 package data.geocoding.dataSource
 
-import org.junit.jupiter.api.Assertions.*
 import com.google.common.truth.Truth.assertThat
-import data.geocoding.dataSource.LocationRemoteDataSource
 import data.model.ApiResult
 import data.model.LocationData
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
-import logic.entity.Location
-import logic.result.LogicResponse
 import org.junit.jupiter.api.Test
 
 class LocationRemoteDataSourceTest {
@@ -25,8 +21,8 @@ class LocationRemoteDataSourceTest {
 
         val result = dataSource.fetchLocation(city)
 
-        assertThat(result).isInstanceOf(LogicResponse.Success::class.java)
-        val location = (result as LogicResponse.Success).data
+        assertThat(result).isInstanceOf(ApiResult.Success::class.java)
+        val location = (result as ApiResult.Success).data.first()
         assertThat(location.lat).isEqualTo(30.0444)
         assertThat(location.lon).isEqualTo(31.2357)
     }

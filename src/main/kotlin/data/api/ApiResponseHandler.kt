@@ -27,7 +27,7 @@ class ApiResponseHandler {
         return when (status.value) {
             in 200..209 -> {
                 val response: T = body()
-                if (response is DataModel) {
+                if (response is DataModel && response.reason != null) {
                     ApiResult.Error(true, response.reason ?:"")
                 } else {
                     ApiResult.Success(response)

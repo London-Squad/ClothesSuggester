@@ -1,15 +1,21 @@
 package data.geocoding.repository
 
-import logic.dataSource.LocationDataSource
+import data.geocoding.mapper.toLocation
+import data.geocoding.repository.dataSource.LocationDataSource
+import data.model.ApiResult
+import data.model.LocationData
 import logic.entity.Location
 import logic.repository.LocationRepository
 import logic.result.LogicResponse
 
-class LocationRepositoryImpl  (
+class LocationRepositoryImpl(
     private val locationDataSource: LocationDataSource
-): LocationRepository {
+) : LocationRepository {
     override suspend fun fetchLocation(city: String): LogicResponse<Location> {
-        return locationDataSource.fetchLocation(city)
+        return when (val response: ApiResult<List<LocationData>> = locationDataSource.fetchLocation(city)) {
+            is ApiResult.Success<List<LocationData>> -> LogicResponse.Success(response.data.first().toLocation())
+            is ApiResult.Error -> LogicResponse.Error(response.reason)
+        }
     }
 
 }
