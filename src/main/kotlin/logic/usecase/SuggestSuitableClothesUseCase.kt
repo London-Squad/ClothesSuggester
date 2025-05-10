@@ -10,7 +10,7 @@ import logic.repository.LocationRepository
 import logic.repository.WeatherRepository
 import logic.result.LogicResponse
 
-class ClothingSuggestionUseCase(
+class SuggestSuitableClothesUseCase(
     private val weatherRepository: WeatherRepository,
     private val locationRepository: LocationRepository
 ) {

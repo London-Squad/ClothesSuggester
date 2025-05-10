@@ -1,12 +1,14 @@
 package di
 
-import data.weather.dataSource.WeatherRemoteDataSource
+import data.geocoding.repository.LocationRepositoryImpl
 import data.weather.repository.WeatherRepositoryImpl
-import data.weather.repository.dataSource.WeatherDataSource
+import logic.repository.LocationRepository
 import logic.repository.WeatherRepository
+import logic.usecase.SuggestSuitableClothesUseCase
 import org.koin.dsl.module
 
 val logicModule = module {
-    single<WeatherDataSource> { WeatherRemoteDataSource(get()) }
+    single<LocationRepository> { LocationRepositoryImpl(get()) }
     single<WeatherRepository> { WeatherRepositoryImpl(get()) }
+    single<SuggestSuitableClothesUseCase> { SuggestSuitableClothesUseCase(get(), get()) }
 }

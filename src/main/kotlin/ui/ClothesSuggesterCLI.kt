@@ -3,11 +3,11 @@ package ui
 import kotlinx.coroutines.*
 import logic.entity.Clothes
 import logic.exception.NetworkException
-import logic.usecase.ClothingSuggestionUseCase
+import logic.usecase.SuggestSuitableClothesUseCase
 import logic.result.LogicResponse
 
 class ClothesSuggesterCLI(
-    private val suggestionUseCase: ClothingSuggestionUseCase,
+    private val suggestionUseCase: SuggestSuitableClothesUseCase,
     private val clothesOutputCLI: ClothesOutputCLI
 ) {
     private val errorHandler = CoroutineExceptionHandler { _, throwable ->
