@@ -1,7 +1,9 @@
 package logic.usecase
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.withContext
 import logic.entity.Clothes
 import logic.entity.ClothingType
 import logic.entity.Location
@@ -22,16 +24,19 @@ class SuggestSuitableClothesUseCase(
     }
 
     private suspend fun fetchTemperature(countryLocation: Location): LogicResponse<Clothes> {
-        val countryTemperature = weatherRepository.fetchTodayWeatherByLocation(
-            countryLocation.latitude,
-            countryLocation.longitude
-        )
-        when (countryTemperature) {
-            is LogicResponse.Success<Temperature> -> {
-                val clothes = suggestClothing(countryTemperature.data.value)
-                return LogicResponse.Success(clothes)
+        return withContext(Dispatchers.IO) {
+            val countryTemperature = weatherRepository.fetchTodayWeatherByLocation(
+                countryLocation.latitude,
+                countryLocation.longitude
+            )
+            when (countryTemperature) {
+                is LogicResponse.Success<Temperature> -> {
+                    val clothes = suggestClothing(countryTemperature.data.value)
+                    LogicResponse.Success(clothes)
+                }
+
+                is LogicResponse.Error -> countryTemperature
             }
-            is LogicResponse.Error -> return countryTemperature
         }
     }
 

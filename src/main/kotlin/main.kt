@@ -5,11 +5,8 @@ import org.koin.core.context.startKoin
 import org.koin.java.KoinJavaComponent
 import ui.ClothesSuggesterCLI
 
-
 fun main() {
-    startKoin { modules(logicModule, dataModule, uiModule)
-    }
+    startKoin { modules(logicModule, dataModule, uiModule) }
     val clothesSuggesterCLI = KoinJavaComponent.getKoin().get<ClothesSuggesterCLI>()
     clothesSuggesterCLI.start()
-
 }

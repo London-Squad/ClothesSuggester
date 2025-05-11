@@ -1,6 +1,9 @@
 package ui
 
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.update
 import logic.entity.Clothes
 import logic.exception.NetworkException
 import logic.usecase.SuggestSuitableClothesUseCase
@@ -9,14 +12,7 @@ import logic.result.LogicResponse
 class ClothesSuggesterCLI(
     private val suggestionUseCase: SuggestSuitableClothesUseCase,
     private val clothesOutputCLI: ClothesOutputCLI
-) {
-    private val errorHandler = CoroutineExceptionHandler { _, throwable ->
-        when (throwable) {
-            is NetworkException -> clothesOutputCLI.showError(throwable.message!!)
-        }
-    }
-    private val scope = CoroutineScope(Dispatchers.IO + errorHandler)
-    private var job: Job? = null
+) : BaseView() {
 
     fun start() {
         while (true) {
@@ -29,18 +25,15 @@ class ClothesSuggesterCLI(
         }
     }
 
-    private fun waitForJob() {
-        runBlocking { job?.join() }
-    }
-
     private fun showSuggestedClothes(city: String) {
         job = scope.launch {
-            suggestionUseCase(city).collect { response ->
-                when (response) {
-                    is LogicResponse.Success<Clothes> -> clothesOutputCLI.showClothingSuggestion(response.data.type)
-                    is LogicResponse.Error -> clothesOutputCLI.showError(response.errorMessage)
+            suggestionUseCase(city)
+                .collect { response ->
+                    when (response) {
+                        is LogicResponse.Success<Clothes> -> clothesOutputCLI.showClothingSuggestion(response.data.type)
+                        is LogicResponse.Error -> clothesOutputCLI.showError(response.errorMessage)
+                    }
                 }
-            }
         }
     }
 
@@ -49,5 +42,9 @@ class ClothesSuggesterCLI(
         val city = readlnOrNull()?.trim()
         return if (city.isNullOrBlank()) null
         else city
+    }
+
+    override fun onError(throwable: Throwable) {
+        clothesOutputCLI.showError(throwable.message!!)
     }
 }
