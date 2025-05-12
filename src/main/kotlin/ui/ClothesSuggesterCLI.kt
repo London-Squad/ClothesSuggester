@@ -1,11 +1,10 @@
 package ui
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import logic.entity.Clothes
-import logic.exception.NetworkException
 import logic.usecase.SuggestSuitableClothesUseCase
 import logic.result.LogicResponse
 
@@ -14,27 +13,52 @@ class ClothesSuggesterCLI(
     private val clothesOutputCLI: ClothesOutputCLI
 ) : BaseView() {
 
-    fun start() {
-        while (true) {
-            waitForJob()
-            when (val city = getUserCity()) {
-                null -> clothesOutputCLI.showError("City name cannot be empty.")
-                "0" -> break
-                else -> showSuggestedClothes(city)
+    private val _uiAction = MutableStateFlow<UiActions>(UiActions.Idle)
+    private val uiAction = _uiAction.asStateFlow()
+
+    override fun onError(throwable: Throwable) {
+        _uiAction.update { UiActions.ShowError(throwable.message!!) }
+    }
+
+    fun start() = runBlocking {
+        observeCurrentState()
+        job?.join()
+        scope.cancel()
+    }
+
+    private fun observeCurrentState() {
+        job = scope.launch {
+            uiAction.collectLatest { action ->
+                when (action) {
+                    UiActions.Idle -> getCityFromUser()
+                    UiActions.ShowLoading -> showLoading()
+                    is UiActions.ReturnResponse -> showClothesResponse(action.response)
+                    is UiActions.ShowError -> showErrorMessage(action.message)
+                }
             }
         }
     }
 
-    private fun showSuggestedClothes(city: String) {
-        job = scope.launch {
-            suggestionUseCase(city)
-                .collect { response ->
-                    when (response) {
-                        is LogicResponse.Success<Clothes> -> clothesOutputCLI.showClothingSuggestion(response.data.type)
-                        is LogicResponse.Error -> clothesOutputCLI.showError(response.errorMessage)
-                    }
-                }
+    private fun getCityFromUser() {
+        when (val city = getUserCity()) {
+            null -> clothesOutputCLI.showError("City name cannot be empty.")
+            "0" -> job?.cancel()
+            else -> showSuggestedClothes(city)
         }
+    }
+
+    private fun showLoading() {
+        println(".........................Loading............................")
+    }
+
+    private fun showClothesResponse(clothes: Clothes) {
+        clothesOutputCLI.showClothingSuggestion(clothes.type)
+        _uiAction.update { UiActions.Idle }
+    }
+
+    private fun showErrorMessage(message: String) {
+        clothesOutputCLI.showError(message)
+        _uiAction.update { UiActions.Idle }
     }
 
     private fun getUserCity(): String? {
@@ -44,7 +68,14 @@ class ClothesSuggesterCLI(
         else city
     }
 
-    override fun onError(throwable: Throwable) {
-        clothesOutputCLI.showError(throwable.message!!)
+    private fun showSuggestedClothes(city: String) {
+        scope.launch {
+            _uiAction.update { UiActions.ShowLoading }
+            when (val response = suggestionUseCase(city)) {
+                is LogicResponse.Success<Clothes> -> _uiAction.update { UiActions.ReturnResponse(response.data) }
+                is LogicResponse.Error -> _uiAction.update { UiActions.ShowError(response.errorMessage) }
+            }
+        }
     }
+
 }
