@@ -1,8 +1,6 @@
 package logic.usecase
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import logic.entity.Clothes
 import logic.entity.ClothingType
@@ -16,10 +14,10 @@ class SuggestSuitableClothesUseCase(
     private val weatherRepository: WeatherRepository,
     private val locationRepository: LocationRepository
 ) {
-    operator fun invoke(countryName: String): Flow<LogicResponse<Clothes>> = flow {
-        when (val countryLocation = locationRepository.fetchLocation(countryName)) {
-            is LogicResponse.Success<Location> -> emit(fetchTemperature(countryLocation.data))
-            is LogicResponse.Error -> emit(countryLocation)
+    suspend operator fun invoke(countryName: String): LogicResponse<Clothes> {
+        return when (val countryLocation = locationRepository.fetchLocation(countryName)) {
+            is LogicResponse.Success<Location> -> fetchTemperature(countryLocation.data)
+            is LogicResponse.Error -> countryLocation
         }
     }
 
