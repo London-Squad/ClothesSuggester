@@ -6,7 +6,6 @@ import io.ktor.client.call.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.*
 import io.ktor.util.network.*
-import logic.exception.*
 
 class ApiResponseHandler {
     suspend inline fun <reified T > safeApiCall(call: () -> HttpResponse): ApiResult<T> {
